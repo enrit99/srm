@@ -1,15 +1,15 @@
 # SRM — Progress Tracker (dinamico)
 
 > Aggiornare questo file alla **fine di ogni sessione** di sviluppo.
-> Allegare sempre insieme a SRM_CONTEXT.md all'inizio di ogni nuova conversazione.
+> Il file vive nel repo Git: ogni modifica significativa va committata.
 
 ---
 
 ## Stato Attuale
 
-**Fase corrente:** 1 — Backend Core
+**Fase corrente:** 2 — Frontend Base
 **Ultima sessione:** 2026-05-05
-**Prossima azione:** Scrivere database.py + models.py + schemas.py
+**Prossima azione:** Scaffold React + Vite + Tailwind, primo login funzionante
 
 ---
 
@@ -21,7 +21,7 @@
 - [x] Design data model
 - [x] Design struttura repository
 - [x] Design API conventions
-- [x] Creazione documenti di progetto (SRM_CONTEXT.md + questo file)
+- [x] Creazione documenti di progetto
 
 ---
 
@@ -30,45 +30,40 @@
 - [x] Accesso SSH, hardening base (utente non-root, chiave SSH, fail2ban)
 - [x] Installazione Docker + Docker Compose
 - [x] Installazione Git
-- [x] Creazione repository GitHub `srm`
+- [x] Repository GitHub `srm` creato e collegato via SSH
 - [x] Struttura cartelle monorepo inizializzata
-- [x] git remote add origin collegato
-- [x] docker-compose funzionante con container placeholder
-- [x] Caddy configurato con dominio srm.devtse.it + HTTPS Let's Encrypt ✓
-
-**Note Fase 0:**
-- Ubuntu 24.04: il servizio SSH si chiama `ssh` (non `sshd`) → `sudo systemctl restart ssh`
-- Cloudflare usato come DNS manager (dominio registrato Aruba). Record A su Cloudflare in modalità **DNS only** (nuvola grigia) — necessario per permettere a Caddy/Let's Encrypt di fare la verifica ACME HTTP-01
-- srm.devtse.it raggiungibile via HTTPS con certificato valido ✓
+- [x] docker-compose con Caddy + frontend placeholder + backend
+- [x] DNS via Cloudflare (modalità DNS only) → srm.devtse.it
+- [x] HTTPS automatico via Caddy + Let's Encrypt ✓
 
 ---
 
-### 🔄 Fase 1 — Backend Core (API + DB)
-- [ ] `database.py`: engine SQLAlchemy, SessionLocal, Base
-- [ ] `models.py`: User, Supplier, Contact, Communication
-- [ ] Alembic init + prima migrazione
-- [ ] `schemas.py`: schemi Pydantic per le entità Fase 1
-- [ ] `auth.py`: hash password, generazione/verifica JWT
-- [ ] `routers/users.py`: POST /register, POST /token
-- [ ] `routers/suppliers.py`: CRUD completo con paginazione e filtri
-- [ ] `routers/contacts.py`: CRUD
-- [ ] `routers/communications.py`: CRUD + filtro per supplier
-- [ ] `main.py`: inclusione router, CORS, startup
-- [ ] Test manuale via Swagger UI (`/docs`)
-- [ ] Dockerfile backend funzionante
+### ✅ Fase 1 — Backend Core (completata)
+- [x] `database.py`: engine SQLAlchemy, SessionLocal, Base, get_db dependency
+- [x] `models.py`: User, Supplier, Contact, Communication + Enum types
+- [x] `schemas.py`: schemi Pydantic v2 con `from_attributes`
+- [x] `auth.py`: bcrypt diretto (no passlib), JWT, get_current_user dependency
+- [x] `routers/users.py`: register + token endpoints
+- [x] `routers/suppliers.py`: CRUD completo + paginazione + filtri (search, tipo) + soft delete
+- [x] `routers/contacts.py`: CRUD
+- [x] `routers/communications.py`: POST + GET per supplier
+- [x] `main.py`: CORS, inclusione router, docs sotto `/api/v1/docs`
+- [x] Alembic init + bind mount per development + prima migration
+- [x] Dockerfile backend + integrazione docker-compose
+- [x] Test end-to-end via Swagger UI: register → login → CRUD supplier → communication ✓
 
 ---
 
-### ⏳ Fase 2 — Frontend Base
+### 🔄 Fase 2 — Frontend Base
 - [ ] Scaffold React + Vite + Tailwind
 - [ ] React Router: struttura pagine (Login, Suppliers, SupplierDetail)
-- [ ] Auth flow: login → salvataggio JWT in localStorage → redirect
+- [ ] Auth flow: login → JWT in localStorage → redirect
 - [ ] Hook `useAuth` + protezione route
 - [ ] Pagina Suppliers: lista con ricerca e paginazione
 - [ ] Pagina SupplierDetail: anagrafica + tab comunicazioni + tab contatti
 - [ ] Form modale: aggiungi/modifica fornitore
 - [ ] Form: log nuova comunicazione
-- [ ] Dockerfile frontend (Nginx statico)
+- [ ] Dockerfile frontend (build statico → Nginx)
 - [ ] Docker Compose: backend + frontend + caddy integrati
 
 ---
@@ -77,34 +72,34 @@
 - [ ] Modelli DB: Contract, Reminder, Order, Machine, Maintenance
 - [ ] Migrazione Alembic
 - [ ] Schemi Pydantic + router per ogni entità
-- [ ] Frontend: tab Contratti in SupplierDetail
-- [ ] Frontend: tab Ordini in SupplierDetail
-- [ ] Frontend: tab Macchine + Manutenzioni
+- [ ] Frontend: tab Contratti / Ordini / Macchine in SupplierDetail
 - [ ] Upload allegati (PDF, immagini) → endpoint `/upload`
 
 ---
 
 ### ⏳ Fase 4 — Scheduler e Reminder
 - [ ] `scheduler.py`: APScheduler avviato su startup FastAPI
-- [ ] Job giornaliero: query contratti con `data_fine` entro `giorni_anticipo_notifica`
+- [ ] Job giornaliero: query contratti in scadenza
 - [ ] Invio email SMTP con lista scadenze
-- [ ] Segnalazione visiva nel frontend (badge "in scadenza")
+- [ ] Badge "in scadenza" nel frontend
 - [ ] Pagina `/reminders`: vista calendario scadenze
 
 ---
 
 ### ⏳ Fase 5 — Dashboard Analitica
 - [ ] Endpoint `/api/v1/dashboard/stats`
-- [ ] KPI: n° fornitori attivi, contratti in scadenza 30gg, ordini ultimo trimestre
-- [ ] Grafico: comunicazioni per mese (Recharts BarChart)
-- [ ] Grafico: distribuzione fornitori per tipo
-- [ ] Tabella: top fornitori per volume ordini
+- [ ] KPI: fornitori attivi, contratti in scadenza, ordini ultimo trimestre
+- [ ] Grafici Recharts: comunicazioni per mese, distribuzione fornitori
+- [ ] Top fornitori per volume ordini
 
 ---
 
 ### ⏳ Fase 6 — Hardening Produzione (opzionale)
+- [ ] Rimuovere bind mount backend (production immutability)
+- [ ] Container backend con utente non-root + UID matching host
 - [ ] Migrazione SQLite → PostgreSQL
-- [ ] Backup automatico DB (cron + rsync o rclone su S3/Backblaze)
+- [ ] Endpoint password reset/change
+- [ ] Backup automatico DB
 - [ ] Rate limiting API
 - [ ] Multi-utente con ruoli (admin / read-only)
 - [ ] Log strutturati (JSON) con rotazione
@@ -115,12 +110,24 @@
 
 | Data | Decisione | Motivazione |
 |---|---|---|
-| 2026-05-05 | SQLite in produzione (fase iniziale) | Utenti <5, nessuna concorrenza alta, zero config |
-| 2026-05-05 | Caddy invece di Nginx per reverse proxy | HTTPS automatico, config minimale |
+| 2026-05-05 | SQLite in produzione (fase iniziale) | Utenti <5, zero config, migrazione futura facile |
+| 2026-05-05 | Caddy invece di Nginx | HTTPS automatico via Let's Encrypt, config minimale |
 | 2026-05-05 | APScheduler embedded invece di Celery | Celery richiede Redis/RabbitMQ; overkill per job giornaliero |
-| 2026-05-05 | Allegati su filesystem invece di DB | BLOB in SQLite degrada performance; path in DB è sufficiente |
-| 2026-05-05 | Monorepo unico invece di repo separati | Progetto piccolo, deploy atomico più semplice |
-| 2026-05-05 | Cloudflare DNS only (no proxy) per srm.devtse.it | Necessario per verifica ACME Let's Encrypt con Caddy |
+| 2026-05-05 | Allegati su filesystem invece di DB | BLOB in SQLite degrada performance |
+| 2026-05-05 | Monorepo unico | Progetto piccolo, deploy atomico più semplice |
+| 2026-05-05 | Cloudflare DNS only (no proxy) | Necessario per verifica ACME Let's Encrypt |
+| 2026-05-05 | Servizio SSH su Ubuntu 24.04 si chiama `ssh` non `sshd` | `sudo systemctl restart ssh` |
+| 2026-05-05 | bcrypt direttamente, eliminata passlib | passlib 1.7.4 abbandonata, incompatibile con bcrypt 4.x |
+| 2026-05-05 | Bind mount `./backend:/app` per sviluppo | Iterazione veloce; da rimuovere in produzione (Fase 6) |
+| 2026-05-05 | Documenti progetto nel repo Git (`docs/`) invece di Google Drive | Versionamento, single source of truth, no MCP update API |
+
+---
+
+## Note Operative
+
+- **File ownership da Docker bind mount**: i file creati dal container appaiono come `root:root` sul host. Fix temporaneo con `sudo chown -R enrico:enrico ~/srm/...`. Risoluzione strutturale rimandata a Fase 6.
+- **Truncamento bcrypt 72 byte**: implementato esplicitamente in `auth.py` (`password.encode()[:72]`) per evitare ValueError su password lunghe.
+- **Swagger UI Authorize button**: per OAuth2PasswordBearer flow lasciare client_id e client_secret VUOTI; compilare solo username + password.
 
 ---
 
@@ -132,7 +139,9 @@ _Nessuno al momento._
 
 ## Sessioni di Sviluppo
 
-| Data | Fase | Attività svolte | File modificati |
-|---|---|---|---|
-| 2026-05-05 | Progettazione | Design completo architettura, data model, stack, documenti | SRM_CONTEXT.md, SRM_PROGRESS.md |
-| 2026-05-05 | Fase 0 | VPS Hetzner, SSH hardening, Docker+Git, repo GitHub, monorepo, docker-compose, Caddy+HTTPS su srm.devtse.it | SRM_PROGRESS.md |
+| Data | Fase | Attività svolte |
+|---|---|---|
+| 2026-05-05 | -1 | Design completo: architettura, data model, stack, documenti |
+| 2026-05-05 | 0 | VPS Hetzner, SSH hardening, Docker+Git, repo GitHub, monorepo, docker-compose, Caddy+HTTPS su srm.devtse.it |
+| 2026-05-05 | 1 | Backend completo: DB, modelli, schemi, auth bcrypt+JWT, 4 router, Alembic, test E2E in Swagger |
+| 2026-05-05 | infra | Migrazione documenti progetto da Drive a repo Git (cartella `docs/`), workflow GitHub via SSH key |
