@@ -292,32 +292,32 @@ flowchart LR
 
 ### Struttura cartelle
 
-src/
-├── main.jsx                  ← entry React
-├── App.jsx                   ← Provider tree + Routes
-├── api/
-│   ├── client.js             ← fetch wrapper con auth header + 401 handler
-│   ├── suppliers.js          ← funzioni CRUD per resource
-│   ├── contacts.js
-│   └── communications.js
-├── hooks/
-│   ├── useAuth.jsx           ← AuthContext + useAuth hook
-│   ├── useSuppliers.js       ← React Query hooks (read + mutations)
-│   ├── useContacts.js
-│   └── useCommunications.js
-├── components/
-│   ├── Modal.jsx             ← UI primitives riusabili
-│   ├── Tabs.jsx
-│   ├── ProtectedRoute.jsx
-│   ├── SupplierForm.jsx      ← form polimorfico (create + edit)
-│   ├── ContactForm.jsx
-│   └── CommunicationForm.jsx
-├── pages/
-│   ├── Login.jsx
-│   ├── Suppliers.jsx         ← list page
-│   └── SupplierDetail.jsx    ← detail con tabs
-└── utils/
-└── format.js             ← formattazione date locale-it
+- **`src/`**
+  - `main.jsx` — entry React, mount su `#root`
+  - `App.jsx` — Provider tree (`QueryClient`, `AuthContext`, `BrowserRouter`) + Routes
+  - **`api/`** — comunicazione col backend
+    - `client.js` — fetch wrapper con auth header + handler 401
+    - `suppliers.js` — funzioni CRUD per fornitori
+    - `contacts.js` — funzioni CRUD per contatti
+    - `communications.js` — funzioni CRUD per comunicazioni
+  - **`hooks/`** — logica React riutilizzabile
+    - `useAuth.jsx` — `AuthContext` + hook `useAuth()`
+    - `useSuppliers.js` — React Query hooks: `useSuppliers`, `useSupplier`, `useCreateSupplier`, `useUpdateSupplier`, `useDeleteSupplier`
+    - `useContacts.js` — `useCreateContact`, `useUpdateContact`, `useDeleteContact`
+    - `useCommunications.js` — `useCommunications`, `useCreateCommunication`, `useUpdateCommunication`, `useDeleteCommunication`
+  - **`components/`** — UI primitives riutilizzabili
+    - `Modal.jsx` — modale generico con backdrop + ESC close
+    - `Tabs.jsx` — sistema di tab con counter
+    - `ProtectedRoute.jsx` — wrapper auth-required → redirect login
+    - `SupplierForm.jsx` — form polimorfico create/edit
+    - `ContactForm.jsx` — form polimorfico create/edit
+    - `CommunicationForm.jsx` — form polimorfico create/edit
+  - **`pages/`** — viste route-level
+    - `Login.jsx` — pagina di login
+    - `Suppliers.jsx` — lista fornitori con search/filtri/paginazione
+    - `SupplierDetail.jsx` — detail con tabs Anagrafica/Contatti/Comunicazioni
+  - **`utils/`** — funzioni pure di supporto
+    - `format.js` — `formatDateTime`, `formatDate` (locale italiano)
 
 ### Pattern adottati
 - **API module pattern**: una funzione per ogni endpoint, mai `fetch` inline nei componenti
