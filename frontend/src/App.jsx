@@ -4,14 +4,14 @@ import { AuthProvider } from './hooks/useAuth'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Login } from './pages/Login'
 import { Suppliers } from './pages/Suppliers'
+import { SupplierDetail } from './pages/SupplierDetail'
 
-// QueryClient: cervello di React Query, gestisce cache e fetch
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,                 // riprova UNA volta in caso di errore
-      refetchOnWindowFocus: false,  // disattiva refetch quando torni sulla tab
-      staleTime: 30_000,        // dati considerati freschi per 30s
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
     },
   },
 })
@@ -23,14 +23,12 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/suppliers"
-              element={
-                <ProtectedRoute>
-                  <Suppliers />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/suppliers" element={
+              <ProtectedRoute><Suppliers /></ProtectedRoute>
+            } />
+            <Route path="/suppliers/:id" element={
+              <ProtectedRoute><SupplierDetail /></ProtectedRoute>
+            } />
             <Route path="/" element={<Navigate to="/suppliers" replace />} />
             <Route path="*" element={<Navigate to="/suppliers" replace />} />
           </Routes>
