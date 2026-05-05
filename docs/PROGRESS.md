@@ -93,6 +93,7 @@ VPS Hetzner, Docker, Caddy, HTTPS via Let's Encrypt, dominio srm.devtse.it.
 - **Swagger UI Authorize button**: per OAuth2 password flow lasciare client_id/client_secret VUOTI.
 - **Caddy reload dopo modifica Caddyfile**: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile` (zero downtime) o `docker compose restart caddy`.
 - **Sistema servizio SSH su Ubuntu 24.04**: si chiama `ssh`, non `sshd`.
+- **Backup**: script `~/srm/backup.sh` esegue snapshot DB SQLite + tar.gz cifrato con age + upload su Cloudflare R2 (`srm-backups`). Cron giornaliero 03:00. Retention locale 3 giorni, remota 90 giorni. Chiave privata age in `~/.config/srm-backup/key.txt` (BACKUP SEPARATO ESSENZIALE).
 
 ---
 
