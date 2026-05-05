@@ -12,9 +12,14 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: nginx:alpine
+    image: node:20-alpine
+    working_dir: /app
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
     networks:
       - srm_net
+    restart: unless-stopped
 
   caddy:
     image: caddy:2-alpine
