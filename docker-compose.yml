@@ -1,0 +1,36 @@
+services:
+
+  backend:
+    build: ./backend
+    env_file: .env
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    networks:
+      - srm_net
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:alpine
+    networks:
+      - srm_net
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+    networks:
+      - srm_net
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+networks:
+  srm_net:
+    driver: bridge

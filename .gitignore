@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+.venv/
+venv/
+
+# Database (NON committare mai dati reali)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# File caricati dagli utenti
+uploads/
+
+# Variabili d'ambiente con segreti
+.env
+
+# Certificati TLS Caddy
+caddy_data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node (per il frontend futuro)
+node_modules/
+dist/
+build/
