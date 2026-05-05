@@ -84,61 +84,213 @@ I container `backend` e `frontend` non hanno porte esposte direttamente sull'hos
 
 ## 4. Data model
 
-User                  ← autenticazione
- ├── id, username, email, hashed_password, is_active
-Supplier              ← entità centrale
- ├── id, nome, tipo (FORNITORE | COSTRUTTORE | ENTRAMBI)
- ├── email, telefono, sito_web, indirizzo, citta, cap, paese
- ├── piva, codice_fiscale, note
- ├── is_deleted (soft delete), created_at, updated_at
- │
- ├── 1:N → Contact     ← referenti del fornitore
- ├── 1:N → Communication
- ├── 1:N → Contract    ← Fase 3
- ├── 1:N → Order       ← Fase 3
- └── 1:N → Machine     ← Fase 3
-Contact
- └── supplier_id, nome, cognome, ruolo, email, telefono, note
-Communication
- └── supplier_id, contact_id?, tipo (EMAIL|TELEFONO|VISITA|ALTRO)
-data, oggetto, corpo_note, created_by, allegato_path?
+Diagramma entità-relazione. Le entità marcate (Phase 3) sono in roadmap.
 
-Convenzioni DB:
-- ID `INTEGER PRIMARY KEY AUTOINCREMENT`
-- Tutti i timestamp `created_at`/`updated_at` con default automatico
+```mermaid
+erDiagram
+    USER ||--o{ COMMUNICATION : "crea"
+    SUPPLIER ||--o{ CONTACT : "ha"
+    SUPPLIER ||--o{ COMMUNICATION : "log"
+    SUPPLIER ||--o{ CONTRACT : "ha (Phase 3)"
+    SUPPLIER ||--o{ ORDER : "ha (Phase 3)"
+    SUPPLIER ||--o{ MACHINE : "ha (Phase 3)"
+    CONTACT ||--o{ COMMUNICATION : "associato"
+    MACHINE ||--o{ MAINTENANCE : "ha (Phase 3)"
+    CONTRACT ||--o{ REMINDER : "ha (Phase 3)"
+
+    USER {
+        int id PK
+        string username UK
+        string email UK
+        string hashed_password
+        bool is_active
+        datetime created_at
+    }
+    SUPPLIER {
+        int id PK
+        string nome
+        enum tipo "FORNITORE|COSTRUTTORE|ENTRAMBI"
+        string email
+        string telefono
+        string sito_web
+        string indirizzo
+        string citta
+        string cap
+        string paese
+        string piva
+        string codice_fiscale
+        text note
+        bool is_deleted "soft delete"
+        datetime created_at
+        datetime updated_at
+    }
+    CONTACT {
+        int id PK
+        int supplier_id FK
+        string nome
+        string cognome
+        string ruolo
+        string email
+        string telefono
+        text note
+    }
+    COMMUNICATION {
+        int id PK
+        int supplier_id FK
+        int contact_id FK "nullable"
+        int created_by FK
+        enum tipo "EMAIL|TELEFONO|VISITA|ALTRO"
+        datetime data
+        string oggetto
+        text corpo_note
+        string allegato_path
+    }
+    CONTRACT {
+        int id PK
+        int supplier_id FK
+        enum tipo
+        string numero_contratto
+        date data_inizio
+        date data_fine
+        decimal valore_eur
+        enum stato
+    }
+    ORDER {
+        int id PK
+        int supplier_id FK
+        string numero_documento
+        enum tipo
+        date data
+        decimal importo_eur
+        string allegato_path
+    }
+    MACHINE {
+        int id PK
+        int supplier_id FK
+        string nome
+        string modello
+        string matricola
+        date data_acquisto
+        date data_fine_garanzia
+    }
+    MAINTENANCE {
+        int id PK
+        int machine_id FK
+        enum tipo
+        date data
+        decimal costo_eur
+        text descrizione
+    }
+    REMINDER {
+        int id PK
+        int contract_id FK
+        date data_scadenza
+        int giorni_anticipo_notifica
+        bool notificato
+    }
+```
+
+### Convenzioni DB
+- ID `INTEGER PRIMARY KEY AUTOINCREMENT` (SQLite) / `SERIAL` (Postgres)
+- Timestamp `created_at`/`updated_at` con default automatico
 - `Supplier` usa soft delete (`is_deleted=True`)
-- `Contact`/`Communication` usano hard delete (sono accessori al fornitore)
-- Allegati: path su filesystem in `./uploads/`, NO BLOB nel DB
-
----
+- `Contact`/`Communication` usano hard delete (entità accessorie)
+- Allegati su filesystem in `./uploads/`, NO BLOB nel DB
 
 ## 5. API REST
 
 Base URL: `/api/v1/`. Tutti gli endpoint richiedono `Authorization: Bearer <token>` tranne `POST /auth/token`.
-POST   /auth/register             ← crea utente
-POST   /auth/token                ← login (form-data, OAuth2 password flow)
-GET    /suppliers/                ← lista paginata + filtri (?page&size&search&tipo)
-POST   /suppliers/
-GET    /suppliers/{id}
-PUT    /suppliers/{id}
-DELETE /suppliers/{id}            ← soft delete
-POST   /contacts/
-GET    /contacts/{id}
-PUT    /contacts/{id}
-DELETE /contacts/{id}
-GET    /communications/supplier/{supplier_id}
-POST   /communications/
-PUT    /communications/{id}
-DELETE /communications/{id}
 
-Risposta liste: `{ "items": [...], "total": N, "page": P, "size": S }`.
-Risposta errori: `{ "detail": "messaggio" }`.
+### Ciclo di vita di una richiesta autenticata
 
-Documentazione interattiva: `/api/v1/docs` (Swagger UI).
+```mermaid
+sequenceDiagram
+    participant C as Client (browser)
+    participant Cy as Caddy
+    participant F as FastAPI
+    participant A as get_current_user<br/>(dependency)
+    participant DB as SQLite
 
----
+    C->>Cy: GET /api/v1/suppliers/<br/>Authorization: Bearer JWT
+    Cy->>F: forward (rete srm_net)
+    F->>A: verifica token (firma + scadenza)
+    A->>DB: SELECT user WHERE username = jwt.sub
+    DB-->>A: user record
+    A-->>F: User object (iniettato come parametro)
+    F->>DB: SELECT suppliers WHERE is_deleted = 0<br/>LIMIT/OFFSET per paginazione
+    DB-->>F: rows
+    F-->>Cy: 200 OK + JSON {items, total, page, size}
+    Cy-->>C: 200 OK (TLS terminato)
+
+    Note over C,DB: Token scaduto o invalido
+    A--xF: HTTPException 401
+    F-->>Cy: 401 Unauthorized
+    Cy-->>C: 401 → frontend redirect /login
+```
+
+### Endpoint principali
+
+| Method | Path | Descrizione |
+|---|---|---|
+| `POST` | `/auth/register` | Crea nuovo utente |
+| `POST` | `/auth/token` | Login (form-data, restituisce JWT) |
+| `GET` | `/suppliers/` | Lista paginata + filtri (`?page&size&search&tipo`) |
+| `POST` | `/suppliers/` | Crea fornitore |
+| `GET` | `/suppliers/{id}` | Dettaglio (include `contacts` annidati) |
+| `PUT` | `/suppliers/{id}` | Aggiorna parziale |
+| `DELETE` | `/suppliers/{id}` | Soft delete |
+| `POST` | `/contacts/` | Crea contatto |
+| `GET` | `/contacts/{id}` | Dettaglio |
+| `PUT` | `/contacts/{id}` | Aggiorna |
+| `DELETE` | `/contacts/{id}` | Hard delete |
+| `GET` | `/communications/supplier/{supplier_id}` | Lista cronologica per fornitore |
+| `POST` | `/communications/` | Crea |
+| `PUT` | `/communications/{id}` | Aggiorna |
+| `DELETE` | `/communications/{id}` | Hard delete |
+
+### Convenzioni di risposta
+- Liste: `{ "items": [...], "total": N, "page": P, "size": S }`
+- Errori: `{ "detail": "messaggio" }`
+- Documentazione interattiva: `/api/v1/docs` (Swagger UI)
 
 ## 6. Frontend architecture
+
+### Pipeline dati: dal click utente al re-render
+
+```mermaid
+flowchart LR
+    U([👤 User])
+    P[Page Component<br/>SupplierDetail.jsx]
+    F[Form Component<br/>SupplierForm.jsx]
+    H[React Query Hook<br/>useUpdateSupplier]
+    API[API Module<br/>api/suppliers.js]
+    Cl[client.js<br/>fetch + auth header]
+    BE[(Backend<br/>FastAPI)]
+    QC[(React Query<br/>Cache)]
+
+    U -->|click Salva| F
+    F -->|onSubmit| P
+    P -->|mutateAsync| H
+    H -->|api.updateSupplier| API
+    API -->|apiRequest| Cl
+    Cl -->|fetch + Bearer JWT| BE
+    BE -->|200 + JSON| Cl
+    Cl --> API
+    API --> H
+    H -->|onSuccess →<br/>invalidateQueries| QC
+    QC -->|stale → refetch| P
+    P -->|re-render| U
+
+    classDef ui fill:#1e3a8a,stroke:#3b82f6,color:#dbeafe
+    classDef logic fill:#064e3b,stroke:#10b981,color:#d1fae5
+    classDef data fill:#581c87,stroke:#a855f7,color:#f3e8ff
+
+    class P,F ui
+    class H,API,Cl logic
+    class BE,QC data
+```
+
+### Struttura cartelle
 
 src/
 ├── main.jsx                  ← entry React
@@ -157,7 +309,7 @@ src/
 │   ├── Modal.jsx             ← UI primitives riusabili
 │   ├── Tabs.jsx
 │   ├── ProtectedRoute.jsx
-│   ├── SupplierForm.jsx      ← form (create + edit via prop initial)
+│   ├── SupplierForm.jsx      ← form polimorfico (create + edit)
 │   ├── ContactForm.jsx
 │   └── CommunicationForm.jsx
 ├── pages/
@@ -168,29 +320,63 @@ src/
 └── format.js             ← formattazione date locale-it
 
 ### Pattern adottati
-- **API module pattern**: una funzione per ogni endpoint, mai fetch inline nei componenti
-- **React Query come data layer**: cache, invalidazione, retry, loading/error stato
+- **API module pattern**: una funzione per ogni endpoint, mai `fetch` inline nei componenti
+- **React Query come data layer**: cache automatica, invalidazione esplicita, retry, stato loading/error
 - **Query key normalizzate**: `String(id)` ovunque per evitare cache miss da type mismatch
-- **Form polimorfici**: stessa form per create e edit via prop `initial`
+- **Form polimorfici**: stesso componente per create e edit via prop `initial`
 - **Stato modale a tre valori**: `null` (chiuso), `{}` (nuovo), `{...id}` (modifica)
-
----
 
 ## 7. Auth flow
 
-Login form → POST /auth/token (form-data) → access_token JWT
-↓
-localStorage.setItem('srm_token', token)
-↓
-AuthContext aggiorna isAuthenticated=true → React Router navigate('/suppliers')
-↓
-Ogni fetch successivo: client.js legge token, aggiunge header Authorization
-↓
-401 response → localStorage.clear + window.location='/login'
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant LP as Login Page
+    participant AC as AuthContext
+    participant Cl as api/client.js
+    participant BE as Backend
+    participant LS as localStorage
+    participant R as React Router
 
-Token validità: 480 minuti (8 ore). Niente refresh token in questa fase.
+    Note over U,R: Login
 
----
+    U->>LP: inserisce username + password
+    LP->>AC: login(username, password)
+    AC->>Cl: loginRequest(...)
+    Cl->>BE: POST /auth/token<br/>(form-data: username, password)
+    BE->>BE: verify_password (bcrypt.checkpw)
+    BE-->>Cl: 200 + {access_token, token_type}
+    Cl-->>AC: token
+    AC->>LS: setItem('srm_token', token)
+    AC->>AC: setToken(...) → isAuthenticated=true
+    AC-->>LP: success
+    LP->>R: navigate('/suppliers')
+    R-->>U: rendering Suppliers page
+
+    Note over U,R: Richiesta autenticata successiva
+
+    U->>Cl: lista fornitori
+    Cl->>LS: getItem('srm_token')
+    LS-->>Cl: token
+    Cl->>BE: GET /api/v1/suppliers/<br/>Authorization: Bearer <token>
+    BE->>BE: jwt.decode (verifica firma + scadenza)
+    BE-->>Cl: 200 + data
+
+    Note over U,R: Token scaduto
+
+    Cl->>BE: GET /api/v1/suppliers/<br/>Authorization: Bearer <expired-token>
+    BE-->>Cl: 401 Unauthorized
+    Cl->>LS: removeItem('srm_token')
+    Cl->>R: window.location = '/login'
+    R-->>U: redirect a login
+```
+
+**Caratteristiche del flusso:**
+- Token JWT firmato HS256 con `SECRET_KEY` random 64 char
+- Validità token: 480 minuti (8 ore)
+- Niente refresh token in questa fase (richiede nuovo login a scadenza)
+- Token salvato in `localStorage` (vulnerabile XSS — accettato per ambito interno; in roadmap Fase 6 valutare httpOnly cookie)
+- Verifica password con bcrypt (cost factor default 12) — limite 72 byte gestito esplicitamente
 
 ## 8. Convenzioni di codice
 
