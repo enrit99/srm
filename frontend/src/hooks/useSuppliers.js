@@ -14,7 +14,7 @@ export function useSuppliers(filters = {}) {
 
 export function useSupplier(id) {
   return useQuery({
-    queryKey: ['supplier', id],
+    queryKey: ['supplier', String(id)],
     queryFn: () => api.getSupplier(id),
     enabled: !!id,  // non fare fetch se id è null/undefined
   })
@@ -38,7 +38,7 @@ export function useUpdateSupplier() {
     mutationFn: ({ id, data }) => api.updateSupplier(id, data),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['suppliers'] })
-      qc.invalidateQueries({ queryKey: ['supplier', id] })
+      qc.invalidateQueries({ queryKey: ['supplier', String(id)] })
     },
   })
 }

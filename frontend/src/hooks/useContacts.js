@@ -12,6 +12,16 @@ export function useCreateContact() {
   })
 }
 
+export function useUpdateContact() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }) => api.updateContact(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['supplier'] })
+    },
+  })
+}
+
 export function useDeleteContact() {
   const qc = useQueryClient()
   return useMutation({

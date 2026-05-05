@@ -10,3 +10,14 @@ export function createCommunication(data) {
     body: JSON.stringify(data),
   })
 }
+
+export function updateCommunication(id, data) {
+  return apiRequest(`/communications/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteCommunication(id) {
+  return apiRequest(`/communications/${id}`, { method: 'DELETE' })
+}

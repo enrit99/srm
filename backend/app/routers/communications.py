@@ -48,3 +48,34 @@ def get_supplier_communications(
     return db.query(models.Communication).filter(
         models.Communication.supplier_id == supplier_id
     ).order_by(models.Communication.data.desc()).all()
+
+@router.put("/{comm_id}", response_model=schemas.CommunicationOut)
+def update_communication(
+    comm_id: int,
+    comm_in: schemas.CommunicationUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    comm = db.query(models.Communication).filter(models.Communication.id == comm_id).first()
+    if not comm:
+        raise HTTPException(status_code=404, detail="Comunicazione non trovata")
+
+    for field, value in comm_in.model_dump(exclude_unset=True).items():
+        setattr(comm, field, value)
+
+    db.commit()
+    db.refresh(comm)
+    return comm
+
+
+@router.delete("/{comm_id}", status_code=204)
+def delete_communication(
+    comm_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    comm = db.query(models.Communication).filter(models.Communication.id == comm_id).first()
+    if not comm:
+        raise HTTPException(status_code=404, detail="Comunicazione non trovata")
+    db.delete(comm)
+    db.commit()

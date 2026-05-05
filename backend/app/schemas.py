@@ -34,6 +34,14 @@ class ContactCreate(BaseModel):
     telefono: Optional[str] = None
     note: Optional[str] = None
 
+class ContactUpdate(BaseModel):
+    nome: Optional[str] = None
+    cognome: Optional[str] = None
+    ruolo: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telefono: Optional[str] = None
+    note: Optional[str] = None
+
 class ContactOut(ContactCreate):
     id: int
     created_at: datetime
@@ -81,6 +89,13 @@ class CommunicationCreate(BaseModel):
     supplier_id: int
     contact_id: Optional[int] = None
     tipo: CommunicationType
+    data: Optional[datetime] = None
+    oggetto: Optional[str] = None
+    corpo_note: Optional[str] = None
+
+class CommunicationUpdate(BaseModel):
+    contact_id: Optional[int] = None
+    tipo: Optional[CommunicationType] = None
     data: Optional[datetime] = None
     oggetto: Optional[str] = None
     corpo_note: Optional[str] = None

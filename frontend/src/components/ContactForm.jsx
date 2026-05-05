@@ -1,9 +1,15 @@
 import { useState } from 'react'
 
-export function ContactForm({ supplierId, onSubmit, onCancel, loading }) {
-  const [form, setForm] = useState({
-    nome: '', cognome: '', ruolo: '', email: '', telefono: '', note: '',
-  })
+const EMPTY = { nome: '', cognome: '', ruolo: '', email: '', telefono: '', note: '' }
+
+export function ContactForm({ supplierId, initial = null, onSubmit, onCancel, loading }) {
+  // Estrai solo i campi editabili dall'initial (escludi id, timestamp, etc.)
+  const initialValues = initial
+    ? { nome: initial.nome || '', cognome: initial.cognome || '', ruolo: initial.ruolo || '',
+        email: initial.email || '', telefono: initial.telefono || '', note: initial.note || '' }
+    : EMPTY
+
+  const [form, setForm] = useState(initialValues)
   const [error, setError] = useState('')
 
   const change = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }))
@@ -12,9 +18,9 @@ export function ContactForm({ supplierId, onSubmit, onCancel, loading }) {
     e.preventDefault()
     setError('')
     try {
-      const payload = { supplier_id: supplierId, ...Object.fromEntries(
-        Object.entries(form).filter(([_, v]) => v !== '')
-      )}
+      const cleaned = Object.fromEntries(Object.entries(form).filter(([_, v]) => v !== ''))
+      // In creazione serve supplier_id; in modifica no (l'endpoint usa l'id in URL)
+      const payload = initial ? cleaned : { supplier_id: supplierId, ...cleaned }
       await onSubmit(payload)
     } catch (err) {
       setError(err.message)
