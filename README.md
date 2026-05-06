@@ -47,14 +47,14 @@ L'app è disponibile su `https://TUO_DOMINIO`. Per il setup completo da zero su 
 
 ## Struttura repo
 
-srm/
-├── backend/          # FastAPI app + Alembic migrations
-├── frontend/         # React + Vite app
-├── docs/             # Documentazione progetto
-├── docker-compose.yml
-├── Caddyfile
-└── .env.example
-
+- **`srm/`**
+  - `backend/ ` — eFastAPI app + Alembic migrations
+  - `frontend/` — React + Vite app
+  - `docs/` — Documentazione progetto
+  - `docker-compose.yml`
+  - `Caddyfile`
+  - `.env.example`
+ 
 ## License
 
 Progetto privato. Tutti i diritti riservati.
